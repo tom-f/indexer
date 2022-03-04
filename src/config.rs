@@ -1,8 +1,8 @@
 use std::fs;
 
 use crate::http::HttpMethod;
-use serde::{self, de::Error, Deserialize, Deserializer};
 use serde::de::Visitor;
+use serde::{self, de::Error, Deserialize, Deserializer};
 
 #[derive(Debug, Deserialize)]
 pub struct Config {
@@ -19,7 +19,8 @@ pub struct Config {
 impl<'de> Deserialize<'de> for HttpMethod {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
-        D: Deserializer<'de> {
+        D: Deserializer<'de>,
+    {
         deserializer.deserialize_any(HttpMethodVisitor)
     }
 }
@@ -35,7 +36,7 @@ impl<'de> Visitor<'de> for HttpMethodVisitor {
 
     fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
     where
-            E: Error, 
+        E: Error,
     {
         match v {
             "POST" => Ok(HttpMethod::POST),
@@ -43,7 +44,6 @@ impl<'de> Visitor<'de> for HttpMethodVisitor {
             _ => Ok(HttpMethod::GET),
         }
     }
-    
 }
 
 #[derive(Debug)]
@@ -60,19 +60,17 @@ impl ConfigError {
 }
 
 pub fn parse_config_file(fname: &str) -> Result<Config, ConfigError> {
-
     let d = match fs::read_to_string(fname) {
         Ok(data) => data,
-        Err(_) => return Err(ConfigError::new("could not open config file"))
+        Err(_) => return Err(ConfigError::new("could not open config file")),
     };
 
     let cfg: Config = match serde_yaml::from_str(&d) {
         Ok(cfg) => cfg,
-        _ => return Err(ConfigError::new("could not deserialize config"))
+        _ => return Err(ConfigError::new("could not deserialize config")),
     };
-    
-    Ok(cfg)
 
+    Ok(cfg)
 }
 
 #[cfg(test)]
@@ -84,7 +82,6 @@ mod config_tests {
 
     #[test]
     fn parse_happy() {
-
         let mut fname = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         fname.push("resources/test/happy-config.yaml");
 

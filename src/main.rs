@@ -4,11 +4,8 @@ mod http;
 use reqwest::RequestBuilder;
 // use crate::config::Config;
 
-
-
 #[tokio::main]
 async fn main() {
-    
     let method_s = String::from("GET");
 
     let client = reqwest::Client::new();
