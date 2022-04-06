@@ -6,14 +6,30 @@ use serde::{self, de::Error, Deserialize, Deserializer};
 
 #[derive(Debug, Deserialize)]
 pub struct Config {
-    method: HttpMethod,
-    pattern: String,
+    pub method: HttpMethod,
+    pub pattern: String,
     #[serde(rename(deserialize = "queueDSN"))]
-    queue_host: String,
+    pub queue_host: String,
     #[serde(rename(deserialize = "queueName"))]
-    queue_name: String,
+    pub queue_name: String,
     #[serde(rename(deserialize = "buildEnv"))]
-    build_env: String,
+    pub build_env: String,
+}
+
+impl Config {
+    pub fn parse_from_file(fname: &str) -> Result<Config, ConfigError> {
+        let d = match fs::read_to_string(fname) {
+            Ok(data) => data,
+            Err(_) => return Err(ConfigError::new("could not open config file")),
+        };
+
+        let cfg: Config = match serde_yaml::from_str(&d) {
+            Ok(cfg) => cfg,
+            _ => return Err(ConfigError::new("could not deserialize config")),
+        };
+
+        Ok(cfg)
+    }
 }
 
 impl<'de> Deserialize<'de> for HttpMethod {
@@ -59,25 +75,11 @@ impl ConfigError {
     }
 }
 
-pub fn parse_config_file(fname: &str) -> Result<Config, ConfigError> {
-    let d = match fs::read_to_string(fname) {
-        Ok(data) => data,
-        Err(_) => return Err(ConfigError::new("could not open config file")),
-    };
-
-    let cfg: Config = match serde_yaml::from_str(&d) {
-        Ok(cfg) => cfg,
-        _ => return Err(ConfigError::new("could not deserialize config")),
-    };
-
-    Ok(cfg)
-}
-
 #[cfg(test)]
 mod config_tests {
     use crate::http::HttpMethod;
 
-    use super::parse_config_file;
+    use super::Config;
     use std::path::PathBuf;
 
     #[test]
@@ -85,7 +87,7 @@ mod config_tests {
         let mut fname = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         fname.push("resources/test/happy-config.yaml");
 
-        let r = parse_config_file(&fname.to_string_lossy()).expect("error parsing conflict");
+        let r = Config::parse_from_file(&fname.to_string_lossy()).expect("error parsing conflict");
 
         assert_eq!(HttpMethod::GET, r.method);
         assert_eq!("amqp://some.host:port", r.queue_host);
