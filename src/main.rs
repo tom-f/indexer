@@ -1,24 +1,24 @@
 mod config;
 mod http;
 
-use reqwest::RequestBuilder;
-// use crate::config::Config;
+use config::Config;
+use http::RequestBuilder;
 
 #[tokio::main]
 async fn main() {
-    let method_s = String::from("GET");
-
-    let client = reqwest::Client::new();
-
-    let method = match method_s.as_str() {
-        "POST" => http::HttpMethod::POST,
-        "GET" => http::HttpMethod::GET,
-        _ => panic!("could not do it"),
+    let cfg = match Config::parse_from_file("") {
+        Ok(cfg) => cfg,
+        Err(message) => panic!("{:?}", message),
     };
 
-    let req = match method {
-        http::HttpMethod::POST => make_post(client),
-        http::HttpMethod::GET => make_get(client),
+    let msg = "message";
+
+    let client = reqwest::Client::new();
+    let rb = RequestBuilder::new(cfg.method, cfg.pattern);
+
+    let req = match rb.build(client, msg) {
+        Some(req) => req,
+        None => panic!("no req"),
     };
 
     let res = match req.send().await {
@@ -27,12 +27,4 @@ async fn main() {
     };
 
     println!("got the status {}", res.status())
-}
-
-fn make_post(c: reqwest::Client) -> RequestBuilder {
-    c.post("")
-}
-
-fn make_get(c: reqwest::Client) -> RequestBuilder {
-    c.get("https://google.com")
 }
