@@ -1,3 +1,4 @@
+use std::fmt;
 use std::fs;
 
 use crate::http::HttpMethod;
@@ -72,6 +73,12 @@ impl ConfigError {
         ConfigError {
             message: msg.to_string(),
         }
+    }
+}
+
+impl fmt::Display for ConfigError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.message)
     }
 }
 
