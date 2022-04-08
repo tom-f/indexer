@@ -2,24 +2,30 @@ use serde_json::{Map, Value};
 use std::collections::HashMap;
 use std::error::Error;
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 #[allow(clippy::upper_case_acronyms)]
 pub enum HttpMethod {
     GET,
     POST,
 }
 
+#[derive(Clone, Debug)]
 pub struct RequestBuilder {
+    client: reqwest::Client,
     method: HttpMethod,
     pattern: String,
 }
 
 impl RequestBuilder {
-    pub fn new(method: HttpMethod, pattern: String) -> RequestBuilder {
-        RequestBuilder { method, pattern }
+    pub fn new(client: reqwest::Client, method: HttpMethod, pattern: String) -> RequestBuilder {
+        RequestBuilder {
+            client,
+            method,
+            pattern,
+        }
     }
 
-    pub fn build(self, c: reqwest::Client, msg: &str) -> Option<reqwest::RequestBuilder> {
+    pub fn build(self, msg: &str) -> Option<reqwest::RequestBuilder> {
         match self.method {
             HttpMethod::GET => {
                 let map = match map_message(msg) {
@@ -27,9 +33,9 @@ impl RequestBuilder {
                     None => return None,
                 };
 
-                Some(c.get(make_url(self.pattern, map)))
+                Some(self.client.get(make_url(self.pattern, map)))
             }
-            HttpMethod::POST => Some(c.post(self.pattern).body(String::from(msg))),
+            HttpMethod::POST => Some(self.client.post(self.pattern).body(String::from(msg))),
         }
     }
 }
@@ -197,10 +203,11 @@ mod http_tests {
         for (http_method, method_name, endpoint, pattern, msg) in tests {
             let client = reqwest::Client::new();
             let request_builder = RequestBuilder::new(
+                client,
                 http_method,
                 String::from(format!("{}{}", server.uri(), pattern)),
             );
-            let request = request_builder.build(client, msg).unwrap();
+            let request = request_builder.build(msg).unwrap();
 
             Mock::given(method(method_name))
                 .and(path(endpoint))
