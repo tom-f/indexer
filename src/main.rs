@@ -41,14 +41,14 @@ async fn main() {
     loop {
         retry_interval.tick().await;
         println!("connecting rmq consumer...");
-        match init_rmq_listen(pool.clone(), rb.clone()).await {
+        match init_rmq_listen(pool.clone(), &rb).await {
             Ok(_) => println!("rmq listen returned"),
             Err(e) => eprintln!("rmq listen had an error: {}", e),
         };
     }
 }
 
-async fn init_rmq_listen(pool: Pool, requester: RequestBuilder) -> Result<(), PoolError> {
+async fn init_rmq_listen(pool: Pool, requester: &RequestBuilder) -> Result<(), PoolError> {
     let rmq_con = get_rmq_con(pool).await.map_err(|e| {
         eprintln!("could not get rmq con: {}", e);
         e
@@ -79,7 +79,15 @@ async fn init_rmq_listen(pool: Pool, requester: RequestBuilder) -> Result<(), Po
         if let Ok(delivery) = delivery {
             println!("got a message: {:?}", delivery);
 
-            let req = match requester.build(String::from(delivery.data)) {
+            let s = match std::str::from_utf8(&delivery.data) {
+                Ok(s) => s,
+                Err(e) => {
+                    println!("could not convert message to string: {}", e);
+                    continue;
+                }
+            };
+
+            let req = match requester.clone().build(s) {
                 Some(r) => r,
                 None => {
                     println!("could not build request");
