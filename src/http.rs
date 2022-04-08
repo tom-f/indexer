@@ -91,7 +91,7 @@ fn make_url(pattern: String, map: HashMap<String, String>) -> String {
         url = url.replace(&pattern, &value);
     }
 
-    return url;
+    url
 }
 
 #[cfg(test)]
