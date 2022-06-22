@@ -1,0 +1,7 @@
+queueDSN: amqp://localhost:5672
+queueName: hello
+pattern: https://some.host/{PartOne}/{PartTwo}
+solrHosts: https://solr.one.host,https://solr.two.host
+method: GET
+buildEnv: test
+wait: 5
